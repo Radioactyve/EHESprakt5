@@ -9,15 +9,17 @@ import weka.attributeSelection.BestFirst;
 
 public class atala3 {
     public static void main(String[] args) throws Exception {
-        // Cargar el modelo Naive Bayes previamente construido
-        Classifier model = (Classifier) weka.core.SerializationHelper.read(args[0]);
-
-        // Cargar el conjunto de datos de prueba
-        DataSource source = new DataSource(args[1]);
+        // ------------------[INPUT]---------------------
+        // Model
+        String modelInput = args[0];
+        Classifier model = (Classifier) weka.core.SerializationHelper.read(modelInput);
+        // Prueba datuak
+        String testInput = args[1];
+        DataSource source = new DataSource(testInput);
         Instances testData = source.getDataSet();
-        testData.setClassIndex(testData.numAttributes() - 1); // Establecer el índice de la clase
+        testData.setClassIndex(testData.numAttributes() - 1);
 
-        // Aplicar el mismo filtro de selección de atributos al conjunto de datos de prueba
+        // --------------------[FILTER]---------------------
         AttributeSelection attributeSelectionFilter = new AttributeSelection();
         CfsSubsetEval eval = new CfsSubsetEval();
         BestFirst search = new BestFirst();
@@ -26,11 +28,9 @@ public class atala3 {
         attributeSelectionFilter.setInputFormat(testData);
         Instances filteredTestData = Filter.useFilter(testData, attributeSelectionFilter);
 
-        // Realizar predicciones en el conjunto de datos de prueba
+        // --------------------[EVALUATION]-------------------
         Evaluation evaluation = new Evaluation(filteredTestData);
         evaluation.evaluateModel(model, filteredTestData);
-
-        // Imprimir los resultados de la evaluación
         System.out.println(evaluation.toSummaryString());
     }
 }

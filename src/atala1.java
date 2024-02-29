@@ -16,13 +16,17 @@ public class atala1 { //divide data set
         data.setClassIndex(data.numAttributes() - 1);
 
         // -------------[STRATIFIED BANAKETA]-----------
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         StratifiedRemoveFolds filter = new StratifiedRemoveFolds();
+        filter.setNumFolds(5);
+
+        // train
         filter.setInputFormat(data);
-        filter.setNumFolds(10); // Dividir en 10 pliegues para obtener el 70% y 30%
-        filter.setFold(1); // Mantener solo el primer pliegue para obtener el 70%
+        filter.setInvertSelection(true);
         Instances trainData = Filter.useFilter(data, filter);
-        filter.setInvertSelection(true); // Mantener la parte que no se seleccionó (30%)
+
+        // dev
+        filter.setInputFormat(data);
+        filter.setInvertSelection(false);
         Instances devData = Filter.useFilter(data, filter);
 
         // ----------------[SAVE ARFF]-------------------
@@ -31,7 +35,7 @@ public class atala1 { //divide data set
         trainSaver.setInstances(trainData);
         trainSaver.setFile(new File(args[1]));
         trainSaver.writeBatch();
-        // TEST "klase balioak --> ?"
+        // DEV "klase balioak --> ?"
         ReplaceMissingValues replace = new ReplaceMissingValues();
         replace.setInputFormat(devData);
         Instances devDataReplaced = Filter.useFilter(devData, replace);
