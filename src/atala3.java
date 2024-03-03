@@ -1,36 +1,55 @@
+import weka.classifiers.bayes.NaiveBayes;
+import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
-import weka.classifiers.Classifier;
-import weka.classifiers.Evaluation;
 import weka.filters.Filter;
-import weka.filters.supervised.attribute.AttributeSelection;
-import weka.attributeSelection.CfsSubsetEval;
-import weka.attributeSelection.BestFirst;
+import weka.filters.unsupervised.attribute.Remove;
+
+import java.io.FileWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class atala3 {
     public static void main(String[] args) throws Exception {
-        // ------------------[INPUT]---------------------
+        //------------------------[INPUT]-------------------------
         // Model
-        String modelInput = args[0];
-        Classifier model = (Classifier) weka.core.SerializationHelper.read(modelInput);
-        // Prueba datuak
-        String testInput = args[1];
-        DataSource source = new DataSource(testInput);
-        Instances testData = source.getDataSet();
+        String modelFile = args[0];
+        NaiveBayes classifier = (NaiveBayes) weka.core.SerializationHelper.read(modelFile);
+        // Test
+        String testFile = args[1];
+        Instances testData = new DataSource(testFile).getDataSet();
         testData.setClassIndex(testData.numAttributes() - 1);
 
-        // --------------------[FILTER]---------------------
-        AttributeSelection attributeSelectionFilter = new AttributeSelection();
-        CfsSubsetEval eval = new CfsSubsetEval();
-        BestFirst search = new BestFirst();
-        attributeSelectionFilter.setEvaluator(eval);
-        attributeSelectionFilter.setSearch(search);
-        attributeSelectionFilter.setInputFormat(testData);
-        Instances filteredTestData = Filter.useFilter(testData, attributeSelectionFilter);
 
-        // --------------------[EVALUATION]-------------------
-        Evaluation evaluation = new Evaluation(filteredTestData);
-        evaluation.evaluateModel(model, filteredTestData);
-        System.out.println(evaluation.toSummaryString());
+        // ----------------------[FILTROA]----------------------
+        // Indizeak lortu
+        List<Integer> indicesToRemove = new ArrayList<>();
+        for (int i = 0; i < classifier.getHeader().numAttributes(); i++) {
+            Attribute attr = classifier.getHeader().attribute(i);
+            int indexInTestData = testData.attribute(attr.name()).index();
+            if (indexInTestData != -1) {
+                indicesToRemove.add(indexInTestData);
+            }
+        }
+        // Filtroa sortu
+        Remove filter = new Remove();
+        filter.setAttributeIndicesArray(indicesToRemove.stream().mapToInt(i -> i).toArray());
+        filter.setInvertSelection(true);
+        filter.setInputFormat(testData);
+        // Filtroa aplikatu
+        Instances filteredTestData = Filter.useFilter(testData, filter);
+
+
+        // -----------------------[IRAGARPENAK]------------------------
+        Instances predictions = new Instances(testData);
+        for (int i = 0; i < filteredTestData.numInstances(); i++) {
+            double predictedClass = classifier.classifyInstance(filteredTestData.instance(i));
+            predictions.instance(i).setClassValue(predictedClass);
+        }
+
+        // Emaitzak gorde
+        FileWriter fw = new FileWriter(args[2]);
+        fw.write(predictions.toString());
+        fw.close();
     }
 }

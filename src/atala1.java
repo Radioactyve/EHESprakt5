@@ -4,6 +4,7 @@ import weka.core.converters.ConverterUtils.DataSource;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 import weka.filters.supervised.instance.StratifiedRemoveFolds;
+import weka.filters.unsupervised.instance.Resample;
 
 import java.io.File;
 
@@ -16,18 +17,20 @@ public class atala1 { //divide data set
         data.setClassIndex(data.numAttributes() - 1);
 
         // -------------[STRATIFIED BANAKETA]-----------
-        StratifiedRemoveFolds filter = new StratifiedRemoveFolds();
-        filter.setNumFolds(5);
+        // Settings
+        Resample resampleFilter = new Resample();
+        resampleFilter.setInputFormat(data);
+        resampleFilter.setNoReplacement(true);
+        resampleFilter.setSampleSizePercent(70.0);
 
-        // train
-        filter.setInputFormat(data);
-        filter.setInvertSelection(true);
-        Instances trainData = Filter.useFilter(data, filter);
+        // Train
+        Instances trainData = Filter.useFilter(data, resampleFilter);
 
-        // dev
-        filter.setInputFormat(data);
-        filter.setInvertSelection(false);
-        Instances devData = Filter.useFilter(data, filter);
+        // Dev
+        resampleFilter.setInputFormat(data);
+        resampleFilter.setSampleSizePercent(70.0);
+        resampleFilter.setInvertSelection(true);
+        Instances devData = Filter.useFilter(data, resampleFilter);
 
         // ----------------[SAVE ARFF]-------------------
         // TRAIN
@@ -35,13 +38,13 @@ public class atala1 { //divide data set
         trainSaver.setInstances(trainData);
         trainSaver.setFile(new File(args[1]));
         trainSaver.writeBatch();
-        // DEV "klase balioak --> ?"
-        ReplaceMissingValues replace = new ReplaceMissingValues();
-        replace.setInputFormat(devData);
-        Instances devDataReplaced = Filter.useFilter(devData, replace);
 
+        // DEV "klase balioak --> ?"
+        for (int i=0; i<devData.size();i++){
+            devData.instance(i).setMissing(data.numAttributes() - 1);
+        }
         ArffSaver devReplacedSaver = new ArffSaver();
-        devReplacedSaver.setInstances(devDataReplaced);
+        devReplacedSaver.setInstances(devData);
         devReplacedSaver.setFile(new File(args[2]));
         devReplacedSaver.writeBatch();
     }

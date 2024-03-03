@@ -7,6 +7,8 @@ import weka.core.converters.ConverterUtils.DataSource;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.Remove;
 
+import java.io.FileWriter;
+
 public class atala4 {
     public static void main(String[] args) throws Exception {
         // -------------[INPUT]-----------
@@ -14,12 +16,12 @@ public class atala4 {
         String trainInput = args[0];
         DataSource trainSource = new DataSource(trainInput);
         Instances trainData = trainSource.getDataSet();
-        trainData.setClassIndex(trainData.numAttributes() - 1); // Establecer el índice de la clase
+        trainData.setClassIndex(trainData.numAttributes() - 1);
         // Test
         String testInput = args[1];
         DataSource testSource = new DataSource(testInput);
         Instances testData = testSource.getDataSet();
-        testData.setClassIndex(testData.numAttributes() - 1); // Establecer el índice de la clase
+        testData.setClassIndex(testData.numAttributes() - 1);
 
         // ----------------------[NAIVE BAYES]-------------------------
         NaiveBayes baseClassifier = new NaiveBayes();
@@ -27,14 +29,13 @@ public class atala4 {
         // -----------------[EVALUATOR + SEARCHER]----------------------
         CfsSubsetEval eval = new CfsSubsetEval();
         BestFirst search = new BestFirst();
-        // search.setSearchTermination(-1); //ez da guztiz beharrezkoa
 
         // -------------------[ATTRIBUTE SELECTED CLASSIFIER]-------------------------
-        AttributeSelectedClassifier metaClassifier = new AttributeSelectedClassifier();
-        metaClassifier.setClassifier(baseClassifier);
-        metaClassifier.setEvaluator(eval);
-        metaClassifier.setSearch(search);
-        metaClassifier.buildClassifier(trainData);
+        AttributeSelectedClassifier classifier = new AttributeSelectedClassifier();
+        classifier.setClassifier(baseClassifier);
+        classifier.setEvaluator(eval);
+        classifier.setSearch(search);
+        classifier.buildClassifier(trainData);
 
         // Hautatutako atributuen indizeak
         int[] selectedAttributes = search.search(eval, trainData);
@@ -47,10 +48,14 @@ public class atala4 {
         Instances filteredTestData = Filter.useFilter(testData, filter);
 
         // ----------------------------[IRAGARPENAK]-------------------------
-        double[] predictions = metaClassifier.distributionForInstance(filteredTestData.firstInstance());
-        System.out.println("IRAGARPENAK:");
-        for (int i = 0; i < predictions.length; i++) {
-            System.out.println("Instantzia ID " + i + ": " + predictions[i]);
+        Instances predictions = new Instances(testData);
+        for (int i = 0; i < filteredTestData.numInstances(); i++) {
+            double predictedClass = classifier.classifyInstance(filteredTestData.instance(i));
+            predictions.instance(i).setClassValue(predictedClass);
         }
+        // Emaitzak gorde
+        FileWriter fw = new FileWriter(args[2]);
+        fw.write(predictions.toString());
+        fw.close();
     }
 }
