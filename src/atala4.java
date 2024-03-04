@@ -26,7 +26,7 @@ public class atala4 {
         // ----------------------[NAIVE BAYES]-------------------------
         NaiveBayes baseClassifier = new NaiveBayes();
 
-        // -----------------[EVALUATOR + SEARCHER]----------------------
+        // (EVALUATOR + SEARCHER)
         CfsSubsetEval eval = new CfsSubsetEval();
         BestFirst search = new BestFirst();
 
@@ -37,20 +37,10 @@ public class atala4 {
         classifier.setSearch(search);
         classifier.buildClassifier(trainData);
 
-        // Hautatutako atributuen indizeak
-        int[] selectedAttributes = search.search(eval, trainData);
-
-        // Ez hautatukoak kendu testData-tik
-        Remove filter = new Remove();
-        filter.setAttributeIndicesArray(selectedAttributes);
-        filter.setInvertSelection(true);
-        filter.setInputFormat(testData);
-        Instances filteredTestData = Filter.useFilter(testData, filter);
-
         // ----------------------------[IRAGARPENAK]-------------------------
         Instances predictions = new Instances(testData);
-        for (int i = 0; i < filteredTestData.numInstances(); i++) {
-            double predictedClass = classifier.classifyInstance(filteredTestData.instance(i));
+        for (int i = 0; i < testData.numInstances(); i++) {
+            double predictedClass = classifier.classifyInstance(testData.instance(i));
             predictions.instance(i).setClassValue(predictedClass);
         }
         // Emaitzak gorde
